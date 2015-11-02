@@ -57,9 +57,9 @@ protected:
         fDecoder->setRequireUnpremultipliedColors(kUnpremul_SkAlphaType == info.alphaType());
 
         SkBitmap bm;
-        const SkImageDecoder::Result result = fDecoder->decode(&stream, &bm, info.colorType(),
+        const bool result = fDecoder->decode(&stream, &bm, info.colorType(),
                                                                SkImageDecoder::kDecodePixels_Mode);
-        if (SkImageDecoder::kFailure == result) {
+        if (false == result) {
             return kInvalidInput;
         }
 
@@ -76,7 +76,7 @@ protected:
             memcpy(ctableEntries, ctable->readColors(), count * sizeof(SkPMColor));
             *ctableCount = count;
         }
-        if (SkImageDecoder::kPartialSuccess == result) {
+        if (true == result) {
             return kIncompleteInput;
         }
         return kSuccess;

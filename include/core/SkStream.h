@@ -82,7 +82,7 @@ public:
      *  or late (after the first unsuccessful read).
      */
     virtual bool isAtEnd() const = 0;
-
+    virtual bool markSupport();
     int8_t   readS8();
     int16_t  readS16();
     int32_t  readS32();

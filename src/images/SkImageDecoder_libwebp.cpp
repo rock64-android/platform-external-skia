@@ -105,7 +105,7 @@ public:
 protected:
     bool onBuildTileIndex(SkStreamRewindable *stream, int *width, int *height) override;
     bool onDecodeSubset(SkBitmap* bitmap, const SkIRect& rect) override;
-    Result onDecode(SkStream* stream, SkBitmap* bm, Mode) override;
+    bool onDecode(SkStream* stream, SkBitmap* bm, Mode) override;
 
 private:
     /**
@@ -153,23 +153,10 @@ private:
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
-
-// This guy exists just to aid in debugging, as it allows debuggers to just
-// set a break-point in one place to see all error exists.
-static void print_webp_error(const SkBitmap& bm, const char msg[]) {
-    SkDEBUGF(("libwebp error %s [%d %d]", msg, bm.width(), bm.height()));
-}
-
 static bool return_false(const SkBitmap& bm, const char msg[]) {
-    print_webp_error(bm, msg);
-    return false; // must always return false
+    SkDEBUGF(("libwebp error %s [%d %d]", msg, bm.width(), bm.height()));
+	return false; // must always return false
 }
-
-static SkImageDecoder::Result return_failure(const SkBitmap& bm, const char msg[]) {
-    print_webp_error(bm, msg);
-    return SkImageDecoder::kFailure; // must always return kFailure
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 static WEBP_CSP_MODE webp_decode_mode(const SkBitmap* decodedBitmap, bool premultiply) {
@@ -401,15 +388,15 @@ bool SkWEBPImageDecoder::onDecodeSubset(SkBitmap* decodedBitmap,
     return true;
 }
 
-SkImageDecoder::Result SkWEBPImageDecoder::onDecode(SkStream* stream, SkBitmap* decodedBitmap,
-                                                    Mode mode) {
+bool SkWEBPImageDecoder::onDecode(SkStream* stream, SkBitmap* decodedBitmap,
+                                  Mode mode) {
 #ifdef TIME_DECODE
     AutoTimeMillis atm("WEBP Decode");
 #endif
 
     int origWidth, origHeight, hasAlpha;
     if (!webp_parse_header(stream, &origWidth, &origHeight, &hasAlpha)) {
-        return kFailure;
+        return false;
     }
     this->fHasAlpha = hasAlpha;
 
@@ -417,16 +404,16 @@ SkImageDecoder::Result SkWEBPImageDecoder::onDecode(SkStream* stream, SkBitmap* 
     SkScaledBitmapSampler sampler(origWidth, origHeight, sampleSize);
     if (!setDecodeConfig(decodedBitmap, sampler.scaledWidth(),
                          sampler.scaledHeight())) {
-        return kFailure;
+        return false;
     }
 
     // If only bounds are requested, done
     if (SkImageDecoder::kDecodeBounds_Mode == mode) {
-        return kSuccess;
+        return true;
     }
 
     if (!this->allocPixelRef(decodedBitmap, NULL)) {
-        return return_failure(*decodedBitmap, "allocPixelRef");
+        return return_false(*decodedBitmap, "allocPixelRef");
     }
 
     SkAutoLockPixels alp(*decodedBitmap);
@@ -434,11 +421,11 @@ SkImageDecoder::Result SkWEBPImageDecoder::onDecode(SkStream* stream, SkBitmap* 
     WebPDecoderConfig config;
     if (!webp_get_config_resize(&config, decodedBitmap, origWidth, origHeight,
                                 this->shouldPremultiply())) {
-        return kFailure;
+        return false;
     }
 
     // Decode the WebP image data stream using WebP incremental decoding.
-    return webp_idecode(stream, &config) ? kSuccess : kFailure;
+    return webp_idecode(stream, &config);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

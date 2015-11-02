@@ -85,12 +85,10 @@ static SkImageInfo validate_info(const SkImageInfo& info) {
     return info.makeAlphaType(newAlphaType);
 }
 
-SkPixelRef::SkPixelRef(const SkImageInfo& info)
-    : fInfo(validate_info(info))
+SkPixelRef::SkPixelRef(const SkImageInfo& info) : fInfo(info)
 #ifdef SK_BUILD_FOR_ANDROID_FRAMEWORK
     , fStableID(next_gen_id())
 #endif
-
 {
     this->setMutex(NULL);
     fRec.zero();
@@ -102,8 +100,7 @@ SkPixelRef::SkPixelRef(const SkImageInfo& info)
 }
 
 
-SkPixelRef::SkPixelRef(const SkImageInfo& info, SkBaseMutex* mutex)
-    : fInfo(validate_info(info))
+SkPixelRef::SkPixelRef(const SkImageInfo& info, SkBaseMutex* mutex) : fInfo(info)
 #ifdef SK_BUILD_FOR_ANDROID_FRAMEWORK
     , fStableID(next_gen_id())
 #endif

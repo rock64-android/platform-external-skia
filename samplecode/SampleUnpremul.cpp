@@ -177,7 +177,7 @@ private:
             decoder->setRequireUnpremultipliedColors(true);
         }
         fDecodeSucceeded = decoder->decode(&stream, &fBitmap, kN32_SkColorType,
-                SkImageDecoder::kDecodePixels_Mode) != SkImageDecoder::kFailure;
+                SkImageDecoder::kDecodePixels_Mode) != false;
         this->inval(NULL);
     }
 

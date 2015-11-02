@@ -66,7 +66,7 @@ void DecodingBench::onPreDraw() {
     SkImageDecoder::Result result =
 #endif
     decoder->decode(stream, &bm, fColorType, SkImageDecoder::kDecodeBounds_Mode);
-    SkASSERT(SkImageDecoder::kFailure != result);
+    SkASSERT(false != result);
 
     const size_t rowBytes = bm.info().minRowBytes();
     fPixelStorage.reset(bm.info().getSafeSize(rowBytes));

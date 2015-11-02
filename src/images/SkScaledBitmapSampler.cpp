@@ -837,7 +837,7 @@ public:
     DummyDecoder() {}
 protected:
     Result onDecode(SkStream*, SkBitmap*, SkImageDecoder::Mode) override {
-        return kFailure;
+        return false;
     }
 };
 

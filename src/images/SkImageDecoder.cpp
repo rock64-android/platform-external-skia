@@ -125,7 +125,7 @@ SkColorType SkImageDecoder::getPrefColorType(SrcDepth srcDepth, bool srcHasAlpha
     return ct;
 }
 
-SkImageDecoder::Result SkImageDecoder::decode(SkStream* stream, SkBitmap* bm, SkColorType pref,
+bool SkImageDecoder::decode(SkStream* stream, SkBitmap* bm, SkColorType pref,
                                               Mode mode) {
     // we reset this to false before calling onDecode
     fShouldCancelDecode = false;
@@ -135,11 +135,11 @@ SkImageDecoder::Result SkImageDecoder::decode(SkStream* stream, SkBitmap* bm, Sk
     // pass a temporary bitmap, so that if we return false, we are assured of
     // leaving the caller's bitmap untouched.
     SkBitmap tmp;
-    const Result result = this->onDecode(stream, &tmp, mode);
-    if (kFailure != result) {
-        bm->swap(tmp);
+    if (!this->onDecode(stream, &tmp, mode)) {
+       return false;
     }
-    return result;
+    bm->swap(tmp);
+    return true;
 }
 
 bool SkImageDecoder::decodeSubset(SkBitmap* bm, const SkIRect& rect, SkColorType pref) {
@@ -251,7 +251,7 @@ bool SkImageDecoder::DecodeStream(SkStreamRewindable* stream, SkBitmap* bm, SkCo
     SkImageDecoder* codec = SkImageDecoder::Factory(stream);
 
     if (codec) {
-        success = codec->decode(stream, bm, pref, mode) != kFailure;
+        success = codec->decode(stream, bm, pref, mode) != false;
         if (success && format) {
             *format = codec->getFormat();
             if (kUnknown_Format == *format) {

@@ -20,7 +20,7 @@ public:
     }
 
 protected:
-    Result onDecode(SkStream* stream, SkBitmap* bm, Mode) override;
+    bool onDecode(SkStream* stream, SkBitmap* bm, Mode) override;
 
 private:
     typedef SkImageDecoder INHERITED;
@@ -72,13 +72,13 @@ static int calculateRowBytesFor8888(int w, int bitCount)
     return 0;
 }
 
-SkImageDecoder::Result SkICOImageDecoder::onDecode(SkStream* stream, SkBitmap* bm, Mode mode)
+bool SkICOImageDecoder::onDecode(SkStream* stream, SkBitmap* bm, Mode mode)
 {
     SkAutoMalloc autoMal;
     const size_t length = SkCopyStreamToStorage(&autoMal, stream);
     // Check that the buffer is large enough to read the directory header
     if (length < 6) {
-        return kFailure;
+        return false;
     }
 
     unsigned char* buf = (unsigned char*)autoMal.get();
@@ -88,13 +88,13 @@ SkImageDecoder::Result SkICOImageDecoder::onDecode(SkStream* stream, SkBitmap* b
     int reserved = read2Bytes(buf, 0);    // 0
     int type = read2Bytes(buf, 2);        // 1
     if (reserved != 0 || type != 1) {
-        return kFailure;
+        return false;
     }
 
     int count = read2Bytes(buf, 4);
     // Check that there are directory entries
     if (count < 1) {
-        return kFailure;
+        return false;
     }
 
     // Check that buffer is large enough to read directory entries.
@@ -102,7 +102,7 @@ SkImageDecoder::Result SkICOImageDecoder::onDecode(SkStream* stream, SkBitmap* b
     // count is 1 because this deprecated decoder only looks at the first
     // directory entry.
     if (length < (size_t)(6 + count*16)) {
-        return kFailure;
+        return false;
     }
 
     //skip ahead to the correct header
@@ -120,7 +120,7 @@ SkImageDecoder::Result SkICOImageDecoder::onDecode(SkStream* stream, SkBitmap* b
     // promote the sum to 64-bits to avoid overflow
     // Check that buffer is large enough to read image data
     if (offset > length || size > length || ((uint64_t)offset + size) > length) {
-        return kFailure;
+        return false;
     }
 
     // Check to see if this is a PNG image inside the ICO
@@ -131,17 +131,13 @@ SkImageDecoder::Result SkICOImageDecoder::onDecode(SkStream* stream, SkBitmap* b
             // Disallow nesting ICO files within one another
             // FIXME: Can ICO files contain other formats besides PNG?
             if (otherDecoder->getFormat() == SkImageDecoder::kICO_Format) {
-                return kFailure;
+                return false;
             }
             // Set fields on the other decoder to be the same as this one.
             this->copyFieldsToOther(otherDecoder.get());
-            const Result result = otherDecoder->decode(&subStream, bm, this->getDefaultPref(),
-                                                       mode);
-            // FIXME: Should we just return result here? Is it possible that data that looked like
-            // a subimage was not, but was actually a valid ICO?
-            if (result != kFailure) {
-                return result;
-            }
+            if (otherDecoder->decode(&subStream, bm, this->getDefaultPref(), mode)){
+                return true;
+	    }
         }
     }
 
@@ -161,7 +157,7 @@ SkImageDecoder::Result SkICOImageDecoder::onDecode(SkStream* stream, SkBitmap* b
 
     // Check that buffer is large enough to read the bit depth
     if (length < offset + 16) {
-        return kFailure;
+        return false;
     }
     int bitCount = read2Bytes(buf, offset+14);
 
@@ -192,7 +188,7 @@ SkImageDecoder::Result SkICOImageDecoder::onDecode(SkStream* stream, SkBitmap* b
             break;
         default:
             SkDEBUGF(("Decoding %ibpp is unimplemented\n", bitCount));
-            return kFailure;
+            return false;
     }
 
     //these should all be zero, but perhaps are not - need to check
@@ -207,7 +203,7 @@ SkImageDecoder::Result SkICOImageDecoder::onDecode(SkStream* stream, SkBitmap* b
     // Check that the buffer is large enough to read the color table
     // For bmp-in-icos, there should be 4 bytes per color
     if (length < (size_t) (begin + 4*colorCount)) {
-        return kFailure;
+        return false;
     }
 
     //this array represents the colortable
@@ -249,13 +245,13 @@ SkImageDecoder::Result SkICOImageDecoder::onDecode(SkStream* stream, SkBitmap* b
 
     if (SkImageDecoder::kDecodeBounds_Mode == mode) {
         delete[] colors;
-        return kSuccess;
+        return true;
     }
 
     if (!this->allocPixelRef(bm, NULL))
     {
         delete[] colors;
-        return kFailure;
+        return false;
     }
 
     // The AND mask is a 1-bit alpha mask for each pixel that comes after the
@@ -264,7 +260,7 @@ SkImageDecoder::Result SkICOImageDecoder::onDecode(SkStream* stream, SkBitmap* b
     // will therefore be safe.
     size_t maxAndOffset = andOffset + ((andLineWidth*(h-1)+(w-1)) >> 3);
     if (length <= maxAndOffset) {
-        return kFailure;
+        return false;
     }
 
     // Here we assert that all reads from the buffer using the XOR offset are
@@ -291,7 +287,7 @@ SkImageDecoder::Result SkICOImageDecoder::onDecode(SkStream* stream, SkBitmap* b
             break;
         default:
             SkASSERT(false);
-            return kFailure;
+            return false;
     }
     int maxXOROffset = xorOffset + maxByte;
     SkASSERT(maxXOROffset < andOffset);
@@ -324,7 +320,7 @@ SkImageDecoder::Result SkICOImageDecoder::onDecode(SkStream* stream, SkBitmap* b
     //ensure we haven't read off the end?
     //of course this doesn't help us if the andOffset was a lie...
     //return andOffset + (andLineWidth >> 3) <= length;
-    return kSuccess;
+    return true;
 }   //onDecode
 
 //function to place the pixel, determined by the bitCount

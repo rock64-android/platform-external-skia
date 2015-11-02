@@ -169,10 +169,10 @@ SkImageGenerator::Result DecodingImageGenerator::onGetPixels(const SkImageInfo& 
     SkBitmap bitmap;
     TargetAllocator allocator(fInfo, pixels, rowBytes);
     decoder->setAllocator(&allocator);
-    const SkImageDecoder::Result decodeResult = decoder->decode(fStream, &bitmap, info.colorType(),
+    const bool decodeResult = decoder->decode(fStream, &bitmap, info.colorType(),
                                                                 SkImageDecoder::kDecodePixels_Mode);
     decoder->setAllocator(NULL);
-    if (SkImageDecoder::kFailure == decodeResult) {
+    if (false == decodeResult) {
         return kInvalidInput;
     }
     if (allocator.isReady()) {  // Did not use pixels!
@@ -202,7 +202,7 @@ SkImageGenerator::Result DecodingImageGenerator::onGetPixels(const SkImageInfo& 
         memcpy(ctableEntries, ctable->readColors(), count * sizeof(SkPMColor));
         *ctableCount = count;
     }
-    if (SkImageDecoder::kPartialSuccess == decodeResult) {
+    if (true == decodeResult) {
         return kIncompleteInput;
     }
     return kSuccess;

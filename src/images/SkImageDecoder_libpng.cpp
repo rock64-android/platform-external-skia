@@ -94,7 +94,7 @@ protected:
     bool onBuildTileIndex(SkStreamRewindable *stream, int *width, int *height) override;
     bool onDecodeSubset(SkBitmap* bitmap, const SkIRect& region) override;
 #endif
-    Result onDecode(SkStream* stream, SkBitmap* bm, Mode) override;
+    bool onDecode(SkStream* stream, SkBitmap* bm, Mode) override;
 
 private:
     SkPNGImageIndex* fImageIndex;
@@ -305,19 +305,19 @@ bool SkPNGImageDecoder::onDecodeInit(SkStream* sk_stream, png_structp *png_ptrp,
     return true;
 }
 
-SkImageDecoder::Result SkPNGImageDecoder::onDecode(SkStream* sk_stream, SkBitmap* decodedBitmap,
+bool SkPNGImageDecoder::onDecode(SkStream* sk_stream, SkBitmap* decodedBitmap,
                                                    Mode mode) {
     png_structp png_ptr;
     png_infop info_ptr;
 
     if (!onDecodeInit(sk_stream, &png_ptr, &info_ptr)) {
-        return kFailure;
+        return false;
     }
 
     PNGAutoClean autoClean(png_ptr, info_ptr);
 
     if (setjmp(png_jmpbuf(png_ptr))) {
-        return kFailure;
+        return false;
     }
 
     png_uint_32 origWidth, origHeight;
@@ -330,7 +330,7 @@ SkImageDecoder::Result SkPNGImageDecoder::onDecode(SkStream* sk_stream, SkBitmap
     SkPMColor           theTranspColor = 0; // 0 tells us not to try to match
 
     if (!this->getBitmapColorType(png_ptr, info_ptr, &colorType, &hasAlpha, &theTranspColor)) {
-        return kFailure;
+        return false;
     }
 
     SkAlphaType alphaType = this->getRequireUnpremultipliedColors() ?
@@ -341,7 +341,7 @@ SkImageDecoder::Result SkPNGImageDecoder::onDecode(SkStream* sk_stream, SkBitmap
                                              colorType, alphaType));
 
     if (SkImageDecoder::kDecodeBounds_Mode == mode) {
-        return kSuccess;
+        return true;
     }
 
     // from here down we are concerned with colortables and pixels
@@ -360,7 +360,7 @@ SkImageDecoder::Result SkPNGImageDecoder::onDecode(SkStream* sk_stream, SkBitmap
 
     if (!this->allocPixelRef(decodedBitmap,
                              kIndex_8_SkColorType == colorType ? colorTable : NULL)) {
-        return kFailure;
+        return false;
     }
 
     SkAutoLockPixels alp(*decodedBitmap);
@@ -368,7 +368,7 @@ SkImageDecoder::Result SkPNGImageDecoder::onDecode(SkStream* sk_stream, SkBitmap
     // Repeat setjmp, otherwise variables declared since the last call (e.g. alp
     // and aur) won't get their destructors called in case of a failure.
     if (setjmp(png_jmpbuf(png_ptr))) {
-        return kFailure;
+        return false;
     }
 
     /* Turn on interlace handling.  REQUIRED if you are not using
@@ -424,7 +424,7 @@ SkImageDecoder::Result SkPNGImageDecoder::onDecode(SkStream* sk_stream, SkBitmap
          */
         const SkPMColor* colors = colorTable ? colorTable->readColors() : NULL;
         if (!sampler.begin(decodedBitmap, sc, *this, colors)) {
-            return kFailure;
+            return false;
         }
         const int height = decodedBitmap->height();
 
@@ -481,7 +481,7 @@ SkImageDecoder::Result SkPNGImageDecoder::onDecode(SkStream* sk_stream, SkBitmap
                 // Fall through.
             case kARGB_4444_SkColorType:
                 // We have chosen not to support unpremul for these colortypes.
-                return kFailure;
+                return false;
             default: {
                 // Fall through to finish the decode. This colortype either
                 // supports unpremul or it is irrelevant because it has no
@@ -494,7 +494,7 @@ SkImageDecoder::Result SkPNGImageDecoder::onDecode(SkStream* sk_stream, SkBitmap
     if (!reallyHasAlpha) {
         decodedBitmap->setAlphaType(kOpaque_SkAlphaType);
     }
-    return kSuccess;
+    return true;
 }
 
 

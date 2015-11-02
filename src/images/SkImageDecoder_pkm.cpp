@@ -24,7 +24,7 @@ public:
     }
 
 protected:
-    Result onDecode(SkStream* stream, SkBitmap* bm, Mode) override;
+    bool onDecode(SkStream* stream, SkBitmap* bm, Mode) override;
 
 private:
     typedef SkImageDecoder INHERITED;
@@ -32,11 +32,11 @@ private:
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-SkImageDecoder::Result SkPKMImageDecoder::onDecode(SkStream* stream, SkBitmap* bm, Mode mode) {
+bool SkPKMImageDecoder::onDecode(SkStream* stream, SkBitmap* bm, Mode mode) {
     SkAutoMalloc autoMal;
     const size_t length = SkCopyStreamToStorage(&autoMal, stream);
     if (0 == length) {
-        return kFailure;
+        return false;
     }
 
     unsigned char* buf = (unsigned char*)autoMal.get();
@@ -54,18 +54,18 @@ SkImageDecoder::Result SkPKMImageDecoder::onDecode(SkStream* stream, SkBitmap* b
     bm->setInfo(SkImageInfo::MakeN32(sampler.scaledWidth(), sampler.scaledHeight(),
                                      kOpaque_SkAlphaType));
     if (SkImageDecoder::kDecodeBounds_Mode == mode) {
-        return kSuccess;
+        return true;
     }
 
     if (!this->allocPixelRef(bm, NULL)) {
-        return kFailure;
+        return false;
     }
 
     // Lock the pixels, since we're about to write to them...
     SkAutoLockPixels alp(*bm);
 
     if (!sampler.begin(bm, SkScaledBitmapSampler::kRGB, *this)) {
-        return kFailure;
+        return false;
     }
 
     // Advance buffer past the header
@@ -79,7 +79,7 @@ SkImageDecoder::Result SkPKMImageDecoder::onDecode(SkStream* stream, SkBitmap* b
     // Decode ETC1
     if (!SkTextureCompressor::DecompressBufferFromFormat(
             outRGBDataPtr, width*3, buf, width, height, SkTextureCompressor::kETC1_Format)) {
-        return kFailure;
+        return false;
     }
 
     // Set each of the pixels...
@@ -92,7 +92,7 @@ SkImageDecoder::Result SkPKMImageDecoder::onDecode(SkStream* stream, SkBitmap* b
         srcRow += sampler.srcDY() * srcRowBytes;
     }
 
-    return kSuccess;
+    return true;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////

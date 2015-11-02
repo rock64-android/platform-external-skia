@@ -24,7 +24,7 @@ public:
     }
 
 protected:
-    Result onDecode(SkStream* stream, SkBitmap* bm, Mode) override;
+    bool onDecode(SkStream* stream, SkBitmap* bm, Mode) override;
 
 private:
     typedef SkImageDecoder INHERITED;
@@ -42,11 +42,11 @@ static inline int read_24bit(const uint8_t* buf) {
         (static_cast<int>(buf[2]) << 16);
 }
 
-SkImageDecoder::Result SkASTCImageDecoder::onDecode(SkStream* stream, SkBitmap* bm, Mode mode) {
+bool SkASTCImageDecoder::onDecode(SkStream* stream, SkBitmap* bm, Mode mode) {
     SkAutoMalloc autoMal;
     const size_t length = SkCopyStreamToStorage(&autoMal, stream);
     if (0 == length) {
-        return kFailure;
+        return false;
     }
 
     unsigned char* buf = (unsigned char*)autoMal.get();
@@ -63,7 +63,7 @@ SkImageDecoder::Result SkASTCImageDecoder::onDecode(SkStream* stream, SkBitmap* 
 
     if (1 != blockDimZ) {
         // We don't support decoding 3D
-        return kFailure;
+        return false;
     }
 
     // Choose the proper ASTC format
@@ -98,7 +98,7 @@ SkImageDecoder::Result SkASTCImageDecoder::onDecode(SkStream* stream, SkBitmap* 
         astcFormat = SkTextureCompressor::kASTC_12x12_Format;
     } else {
         // We don't support any other block dimensions..
-        return kFailure;
+        return false;
     }
 
     // Advance buf past the block dimensions
@@ -111,7 +111,7 @@ SkImageDecoder::Result SkASTCImageDecoder::onDecode(SkStream* stream, SkBitmap* 
 
     if (1 != depth) {
         // We don't support decoding 3D.
-        return kFailure;
+        return false;
     }
 
     // Advance the buffer past the image dimensions
@@ -132,18 +132,18 @@ SkImageDecoder::Result SkASTCImageDecoder::onDecode(SkStream* stream, SkBitmap* 
     bm->setInfo(SkImageInfo::MakeN32(sampler.scaledWidth(), sampler.scaledHeight(), alphaType));
 
     if (SkImageDecoder::kDecodeBounds_Mode == mode) {
-        return kSuccess;
+        return true;
     }
 
     if (!this->allocPixelRef(bm, NULL)) {
-        return kFailure;
+        return false;
     }
 
     // Lock the pixels, since we're about to write to them...
     SkAutoLockPixels alp(*bm);
 
     if (!sampler.begin(bm, SkScaledBitmapSampler::kRGBA, *this)) {
-        return kFailure;
+        return false;
     }
 
     // ASTC Data is encoded as RGBA pixels, so we should extract it as such
@@ -154,7 +154,7 @@ SkImageDecoder::Result SkASTCImageDecoder::onDecode(SkStream* stream, SkBitmap* 
     // Decode ASTC
     if (!SkTextureCompressor::DecompressBufferFromFormat(
             outRGBADataPtr, width*4, buf, width, height, astcFormat)) {
-        return kFailure;
+        return false;
     }
 
     // Set each of the pixels...
@@ -167,7 +167,7 @@ SkImageDecoder::Result SkASTCImageDecoder::onDecode(SkStream* stream, SkBitmap* 
         srcRow += sampler.srcDY() * srcRowBytes;
     }
 
-    return kSuccess;
+    return true;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////

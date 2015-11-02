@@ -216,9 +216,9 @@ DEF_TEST(Gif_Sampled, r) {
     }
     decoder->setSampleSize(4);
     SkBitmap bm;
-    const SkImageDecoder::Result result = decoder->decode(&fileStream, &bm,
+    const bool result = decoder->decode(&fileStream, &bm,
             SkImageDecoder::kDecodePixels_Mode);
-    REPORTER_ASSERT(r, result == SkImageDecoder::kSuccess);
+    REPORTER_ASSERT(r, result == true);
 }
 
 #endif  // !(SK_BUILD_FOR_WIN32||SK_BUILD_FOR_IOS||SK_BUILD_FOR_MAC)

@@ -24,7 +24,7 @@ public:
     }
 
 protected:
-    Result onDecode(SkStream* stream, SkBitmap* bm, Mode mode) override;
+    bool onDecode(SkStream* stream, SkBitmap* bm, Mode mode) override;
 
 private:
     typedef SkImageDecoder INHERITED;
@@ -92,7 +92,7 @@ private:
     bool fJustBounds;
 };
 
-SkImageDecoder::Result SkBMPImageDecoder::onDecode(SkStream* stream, SkBitmap* bm, Mode mode) {
+bool SkBMPImageDecoder::onDecode(SkStream* stream, SkBitmap* bm, Mode mode) {
     // First read the entire stream, so that all of the data can be passed to
     // the BmpDecoderHelper.
 
@@ -101,7 +101,7 @@ SkImageDecoder::Result SkBMPImageDecoder::onDecode(SkStream* stream, SkBitmap* b
     // Byte length of all of the data.
     const size_t length = SkCopyStreamToStorage(&storage, stream);
     if (0 == length) {
-        return kFailure;
+        return false;
     }
 
     const bool justBounds = SkImageDecoder::kDecodeBounds_Mode == mode;
@@ -113,7 +113,7 @@ SkImageDecoder::Result SkBMPImageDecoder::onDecode(SkStream* stream, SkBitmap* b
         const int max_pixels = 16383*16383; // max width*height
         if (!helper.DecodeImage((const char*)storage.get(), length,
                                 max_pixels, &callback)) {
-            return kFailure;
+            return false;
         }
     }
 
@@ -136,17 +136,17 @@ SkImageDecoder::Result SkBMPImageDecoder::onDecode(SkStream* stream, SkBitmap* b
                                   colorType, kOpaque_SkAlphaType));
 
     if (justBounds) {
-        return kSuccess;
+        return true;
     }
 
     if (!this->allocPixelRef(bm, NULL)) {
-        return kFailure;
+        return false;
     }
 
     SkAutoLockPixels alp(*bm);
 
     if (!sampler.begin(bm, SkScaledBitmapSampler::kRGB, *this)) {
-        return kFailure;
+        return false;
     }
 
     const int srcRowBytes = width * 3;
@@ -158,5 +158,5 @@ SkImageDecoder::Result SkBMPImageDecoder::onDecode(SkStream* stream, SkBitmap* b
         sampler.next(srcRow);
         srcRow += sampler.srcDY() * srcRowBytes;
     }
-    return kSuccess;
+    return true;
 }

@@ -50,7 +50,7 @@ static CGImageSourceRef SkStreamToCGImageSource(SkStream* stream) {
 
 class SkImageDecoder_CG : public SkImageDecoder {
 protected:
-    virtual Result onDecode(SkStream* stream, SkBitmap* bm, Mode);
+    virtual bool onDecode(SkStream* stream, SkBitmap* bm, Mode);
 };
 
 static void argb_4444_force_opaque(void* row, int count) {
@@ -131,17 +131,17 @@ static bool colorspace_is_sRGB(CGColorSpaceRef cs) {
 #endif
 }
 
-SkImageDecoder::Result SkImageDecoder_CG::onDecode(SkStream* stream, SkBitmap* bm, Mode mode) {
+bool SkImageDecoder_CG::onDecode(SkStream* stream, SkBitmap* bm, Mode mode) {
     CGImageSourceRef imageSrc = SkStreamToCGImageSource(stream);
 
     if (NULL == imageSrc) {
-        return kFailure;
+        return false;
     }
     SkAutoTCallVProc<const void, CFRelease> arsrc(imageSrc);
 
     CGImageRef image = CGImageSourceCreateImageAtIndex(imageSrc, 0, NULL);
     if (NULL == image) {
-        return kFailure;
+        return false;
     }
     SkAutoTCallVProc<CGImage, CGImageRelease> arimage(image);
 
@@ -159,17 +159,17 @@ SkImageDecoder::Result SkImageDecoder_CG::onDecode(SkStream* stream, SkBitmap* b
 
     bm->setInfo(SkImageInfo::MakeN32Premul(width, height, cpType));
     if (SkImageDecoder::kDecodeBounds_Mode == mode) {
-        return kSuccess;
+        return true;
     }
 
     if (!this->allocPixelRef(bm, NULL)) {
-        return kFailure;
+        return false;
     }
 
     SkAutoLockPixels alp(*bm);
 
     if (!SkCopyPixelsFromCGImage(bm->info(), bm->rowBytes(), bm->getPixels(), image)) {
-        return kFailure;
+        return false;
     }
 
     CGImageAlphaInfo info = CGImageGetAlphaInfo(image);
@@ -199,7 +199,7 @@ SkImageDecoder::Result SkImageDecoder_CG::onDecode(SkStream* stream, SkBitmap* b
         }
         bm->setAlphaType(kUnpremul_SkAlphaType);
     }
-    return kSuccess;
+    return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -86,7 +86,7 @@ protected:
             SkDEBUGCODE(SkImageDecoder::Result result =) fDecoder->decode(&fStream, &bm,
                     SkImageDecoder::kDecodePixels_Mode);
 #ifdef SK_DEBUG
-            if (SkImageDecoder::kFailure == result) {
+            if (false == result) {
                 SkDebugf("failed to decode %s\n", fFilename.c_str());
                 return;
             }
