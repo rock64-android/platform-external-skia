@@ -684,7 +684,7 @@ do{
 				char *srcAddr = outInfo.outAddr;
 				HW_DEBUG("bpr: %d, rowptr: %x, srcAddr: %x, reuseBitmap: %d\n",bpr, rowptr, srcAddr, reuseBitmap);
 				WHLOG("bpr: %d, rowptr: %x, srcAddr: %x",bpr, rowptr, srcAddr);
-				while(height < outInfo.outHeight){
+                while(height < outInfo.outHeight && srcAddr != NULL && rowptr != NULL){
 					memcpy(rowptr, srcAddr, bpr);
 					rowptr += bpr;
 					srcAddr += outInfo.ppscalew * pixelBytes;
