@@ -719,6 +719,12 @@ LOCAL_C_INCLUDES := \
 	external/dng_sdk \
 	external/piex
 
+LOCAL_SHARED_LIBRARIES += libjpeghwdec
+LOCAL_C_INCLUDES += hardware/rockchip/jpeghw/release/decoder_release \
+		hardware/rockchip/librkvpu
+LOCAL_CFLAGS += -DUSE_HW_JPEG
+LOCAL_SRC_FILES += src/images/SkHwJpegUtility.cpp
+
 LOCAL_EXPORT_C_INCLUDE_DIRS := \
 	$(LOCAL_PATH)/include/codec \
 	$(LOCAL_PATH)/include/android \

@@ -30,7 +30,8 @@ LOCAL_SHARED_LIBRARIES += \
 	libicui18n \
 	libft2 \
 	libdng_sdk \
-	libpiex
+	libpiex \
+	libjpeghwdec
 
 LOCAL_STATIC_LIBRARIES += \
 	libgif \
