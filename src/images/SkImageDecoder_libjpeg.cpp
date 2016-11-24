@@ -32,7 +32,7 @@ extern "C" {
     #include "jpeglib.h"
     #include "jerror.h"
 }
-#define HW_JPEG_DEBUG
+//#define HW_JPEG_DEBUG
 #ifdef HW_JPEG_DEBUG
 #define HW_DEBUG SkDebugf
 #else
