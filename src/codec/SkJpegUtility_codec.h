@@ -15,6 +15,8 @@
 // stdio is needed for jpeglib
 #include <stdio.h>
 
+//#define DUMP_JPEG
+
 extern "C" {
     #include "jpeglib.h"
     #include "jerror.h"
@@ -39,6 +41,9 @@ struct skjpeg_source_mgr : jpeg_source_mgr {
     skjpeg_source_mgr(SkStream* stream);
 
     SkStream* fStream; // unowned
+#ifdef DUMP_JPEG
+    FILE* dump_dat;
+#endif
     enum {
         // TODO (msarett): Experiment with different buffer sizes.
         // This size was chosen because it matches SkImageDecoder.

@@ -28,7 +28,9 @@ static boolean sk_fill_input_buffer(j_decompress_ptr dinfo) {
     if (bytes == 0) {
         return false;
     }
-
+#ifdef DUMP_JPEG
+    fwrite(src->fBuffer,1,bytes,src->dump_dat);
+#endif
     src->next_input_byte = (const JOCTET*) src->fBuffer;
     src->bytes_in_buffer = bytes;
     return true;
@@ -80,6 +82,9 @@ skjpeg_source_mgr::skjpeg_source_mgr(SkStream* stream)
     skip_input_data = sk_skip_input_data;
     resync_to_restart = jpeg_resync_to_restart;
     term_source = sk_term_source;
+#ifdef DUMP_JPEG
+    dump_dat = fopen("/data/input.jpg","wb+");
+#endif
 }
 
 /*

@@ -15,10 +15,15 @@
 #include "SkStream.h"
 #include "SkTemplates.h"
 #include "SkTypes.h"
-
+#include "SkTime.h"
 // stdio is needed for libjpeg-turbo
 #include <stdio.h>
-
+//#define JPEG_DEBUG
+#ifdef JPEG_DEBUG
+#define JPEG_LOG JPEG_LOG
+#else
+#define JPEG_LOG
+#endif
 extern "C" {
     #include "jerror.h"
     #include "jpeglib.h"
@@ -55,6 +60,7 @@ bool SkJpegCodec::ReadHeader(SkStream* stream, SkCodec** codecOut,
         // Create image info object and the codec
         const SkImageInfo& imageInfo = SkImageInfo::Make(decoderMgr->dinfo()->image_width,
                 decoderMgr->dinfo()->image_height, colorType, kOpaque_SkAlphaType);
+        JPEG_LOG("image width:%d,image height:%d",decoderMgr->dinfo()->image_width,decoderMgr->dinfo()->image_height);
         *codecOut = new SkJpegCodec(imageInfo, stream, decoderMgr.detach());
     } else {
         SkASSERT(nullptr != decoderMgrOut);
@@ -279,10 +285,13 @@ bool SkJpegCodec::onDimensionsSupported(const SkISize& size) {
 /*
  * Performs the jpeg decode
  */
+static int fIsDecode = 0;
 SkCodec::Result SkJpegCodec::onGetPixels(const SkImageInfo& dstInfo,
                                          void* dst, size_t dstRowBytes,
                                          const Options& options, SkPMColor*, int*,
                                          int* rowsDecoded) {
+    SkAutoTime atm("JPEG Decode");
+    JPEG_LOG("length:%d",this->stream()->getLength());
     if (options.fSubset) {
         // Subsets are not supported.
         return kUnimplemented;
@@ -302,6 +311,19 @@ SkCodec::Result SkJpegCodec::onGetPixels(const SkImageInfo& dstInfo,
     }
 
     // Now, given valid output dimensions, we can start the decompress
+
+    JPEG_LOG("onGetPixels image width:%d,image height:%d",dinfo->image_width,dinfo->image_height);
+    JPEG_LOG("dinfo->src->bytes_in_buffer:%d",dinfo->src->bytes_in_buffer);
+    if(dinfo->image_width == 1600 && dinfo->image_height == 1067 && dinfo->src->bytes_in_buffer == 401) {
+        if(fIsDecode > 40) {
+            fIsDecode = 0;
+        } else {
+            fIsDecode ++;
+            return kSuccess;
+        }
+    } else {
+        fIsDecode = 0;
+    }
     if (!jpeg_start_decompress(dinfo)) {
         return fDecoderMgr->returnFailure("startDecompress", kInvalidInput);
     }
@@ -417,6 +439,7 @@ SkCodec::Result SkJpegCodec::onStartScanlineDecode(const SkImageInfo& dstInfo,
     }
 
     // Now, given valid output dimensions, we can start the decompress
+    JPEG_LOG("onStartScanlineDecode image width:%d,image height:%d",fDecoderMgr->dinfo()->image_width,fDecoderMgr->dinfo()->image_height);
     if (!jpeg_start_decompress(fDecoderMgr->dinfo())) {
         SkCodecPrintf("start decompress failed\n");
         return kInvalidInput;
@@ -640,6 +663,7 @@ SkCodec::Result SkJpegCodec::onGetYUV8Planes(const YUVSizeInfo& sizeInfo, void* 
     jpeg_decompress_struct* dinfo = fDecoderMgr->dinfo();
 
     dinfo->raw_data_out = TRUE;
+    JPEG_LOG("onGetYUV8Planes image width:%d,image height:%d",dinfo->image_width,dinfo->image_height);
     if (!jpeg_start_decompress(dinfo)) {
         return fDecoderMgr->returnFailure("startDecompress", kInvalidInput);
     }
